@@ -283,11 +283,77 @@ const updated = async (req, res) => {
 
 const upload = async (req, res) => {
   try {
+    //RECOGER FICHERO DE MAGEN
+    if (!req.file) {
+      return res.status(400).json({
+        status: "error",
+        mensaje: "No se encuentran la imagen.",
+      });
+    }
+    //CONSEGUIR NOMBRE DE ARCHIVO
+    let image = req.file.originalname;
+    //EXTENCION
+    let imageSplit = image.split(".");
+    let extension = imageSplit[1].toLowerCase();
+    if (
+      extension !== "png" &&
+      extension !== "jpg" &&
+      extension !== "jpeg" &&
+      extension !== "gift"
+    ) {
+      const filePath = req.file.path;
+      const fileDelete = fs.unlinkSync(filePath);
+      return res.status(400).json({
+        status: "error",
+        message: "Extension del fichero invalida.",
+      });
+    }
+    // //GUARDARLA EN BASE DE DATOS
+    const userUpdated = await User.findOneAndUpdate(
+      req.user._id,
+      { image: req.file.filename },
+      { new: true }
+    );
+    if (!userUpdated) {
+      return res.status(400).json({
+        status: "error",
+        message: "Error al subir la imagen algo inesperdado.",
+      });
+    }
     return res.status(200).json({
       status: "success",
       message: "Subida de imagen correcta",
       user: req.user,
+      files: req.files,
+      file: req.file,
+      image,
     });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      mensaje: "Error al listar usuarios.",
+      error: error.message,
+    });
+  }
+};
+
+const avatar = async (req, res) => {
+  try {
+    //SACAR PARAMETRO DE URL
+    const file = req.params.file;
+    //EL PATH DE LA IMAGEN
+    const filePath = "./uploads/avatars/" + file;
+    //COMPROBAR SI LA IMAGEN EXISTE
+    fs.stat(filePath, (error, exist) => {
+      if (!exist) {
+        return res.status(400).json({
+          status: "error",
+          message: "No existe la imagen.",
+        });
+      }
+      return res.sendFile(path.resolve(filePath));
+    });
+    //
   } catch (error) {
     return res.status(500).json({
       status: "error",
@@ -305,4 +371,5 @@ module.exports = {
   list,
   updated,
   upload,
+  avatar,
 };

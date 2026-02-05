@@ -23,7 +23,7 @@ const UserSchema = new Schema({
     type: String,
     default: "role_user",
   },
-  role: {
+  image: {
     type: String,
     default: "image.png",
   },
