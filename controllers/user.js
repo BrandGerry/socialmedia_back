@@ -255,7 +255,7 @@ const updated = async (req, res) => {
 
     // Update solo del usuario del token
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
+      { _id: userId },
       userUpdated,
       { new: true } // devuelve el documento ya actualizado
     ).select("-password"); // opcional: no regresar el password
