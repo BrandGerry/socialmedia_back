@@ -6,6 +6,7 @@ const user = require("../models/user");
 const mongoosePag = require("mongoose-pagination");
 
 const jwt = require("../services/jwt");
+const { followThisUser, followUsersIds } = require("../services/followService");
 
 const pruebaUser = (req, res) => {
   return res.status(200).json({
@@ -139,9 +140,10 @@ const profile = async (req, res) => {
       password: 0,
       role: 0,
     });
+    //DEVOLVER INFO DEL SEGUIMIENTO FOLLOW
+    const followInfo = await followThisUser(req.user.id, id);
     //DEVOLVER EL RESULTADO
     if (!userProfile || userProfile.length === 0) {
-      s;
       return res.status(400).json({
         status: "error",
         mensaje: "No existe el usuario",
@@ -150,6 +152,7 @@ const profile = async (req, res) => {
     return res.status(200).json({
       status: "success",
       user: userProfile,
+      followInfo,
     });
   } catch (error) {
     return res.status(500).json({
@@ -164,6 +167,8 @@ const list = async (req, res) => {
   try {
     const page = req.params.page ? parseInt(req.params.page, 10) : 1;
     const itemsPerPage = 3;
+    const followresponse = await followUsersIds(req.user.id);
+    console.log("111111", followresponse);
 
     if (isNaN(page) || page < 1) {
       return res.status(400).json({
@@ -195,6 +200,7 @@ const list = async (req, res) => {
       totalUsers,
       totalPages: Math.ceil(totalUsers / itemsPerPage),
       users,
+      follow_response: followresponse,
     });
   } catch (error) {
     return res.status(500).json({

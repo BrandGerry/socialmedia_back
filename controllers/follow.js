@@ -2,8 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const Follow = require("../models/follow");
 const User = require("../models/user");
-const follow = require("../models/follow");
 
+//IMPORTACION DE SERVICIO
+const { followUsersIds } = require("../services/followService");
 const pruebaFollow = (req, res) => {
   return res.status(200).json({
     msg: "Soy una accion de follow.",
@@ -91,8 +92,9 @@ const following = async (req, res) => {
         mensaje: "No hay followe disponibles.",
       });
     }
-    //PAGINA CON MONGOSE
-    //ARRAYS DE IDS QUE ME SIGUEN Y SIGO
+
+    const followresponse = await followUsersIds(req.user.id);
+    console.log("followresponse", followresponse);
 
     return res.status(200).json({
       status: "Success",
@@ -100,6 +102,8 @@ const following = async (req, res) => {
       follows,
       totalFollows,
       pages: Math.ceil(totalFollows / itemsPerPage),
+      user_following: followresponse.following,
+      user_follow_me: followresponse.followers,
     });
   } catch (error) {
     return res.status(500).json({
@@ -112,10 +116,37 @@ const following = async (req, res) => {
 
 const followers = async (req, res) => {
   try {
+    //SACR IDE DEL USUARIO
+    const userId = req.params.id ? req.params.id : req.user.id;
+    //COMPROBAR SI ME LLEGA LA PAGINA
+    const page = req.params.page ? parseInt(req.params.page, 10) : 1;
+    //CUANTOS ELEMENTOS POR PAGINA QUIERO MOSTRAR
+    const itemsPerPage = 6;
+    const totalFollows = await Follow.countDocuments({ user: userId });
+
+    //FIND FOLLOW
+    const follows = await Follow.find({ followed: userId })
+      .populate("user", "-password -role -__v")
+      .sort({ _id: 1 })
+      .skip((page - 1) * itemsPerPage)
+      .limit(itemsPerPage);
+
+    if (!follows || follows.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        mensaje: "No hay followe disponibles.",
+      });
+    }
+
+    const followresponse = await followUsersIds(req.user.id);
     return res.status(200).json({
       status: "Success",
-      msg: "Funcion de followers correctamente que estoy siguiendo",
-      identity: req.user,
+      msg: "Listado de usuarios que me siguen.",
+      follows,
+      totalFollows,
+      pages: Math.ceil(totalFollows / itemsPerPage),
+      user_following: followresponse.following,
+      user_follow_me: followresponse.followers,
     });
   } catch (error) {
     return res.status(500).json({
